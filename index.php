@@ -110,12 +110,6 @@ echo "<option value='{$r['kabupaten']}'>{$r['kabupaten']}</option>";
 <div class="col-md-6">
 <select id="filterKomoditas" class="form-select">
 <option value="">Semua Komoditas</option>
-<?php
-$k=mysqli_query($conn,"SELECT DISTINCT komoditas FROM pelaku_usaha ORDER BY komoditas");
-while($r=mysqli_fetch_assoc($k)){
-echo "<option value='{$r['komoditas']}'>{$r['komoditas']}</option>";
-}
-?>
 </select>
 </div>
 
@@ -188,9 +182,25 @@ c.push(`hsl(${i*(360/n)},70%,55%)`);
 return c;
 }
 
+function normalizeKomoditas(k){
+var v=(k||'').trim().toLowerCase().replace(/\s+/g,' ');
+var title=function(s){return s.replace(/\b\w/g,function(c){return c.toUpperCase();});};
+var mc=v.match(/^ca[bh]e?a?i?\s*(.*)$/);
+if(mc) return ('Cabai'+(mc[1]?' '+title(mc[1]):'')).trim();
+var mb=v.match(/^bawang\s*(.*)$/);
+if(mb) return ('Bawang'+(mb[1]?' '+title(mb[1]):'')).trim();
+var mf=v.match(/^buah\s+(.+)$/);
+if(mf) return 'Buah '+title(mf[1]);
+return title(v);
+}
+
 document.addEventListener("DOMContentLoaded", function(){
 
 let dataAsli = <?= json_encode($dataTable) ?>;
+
+let komSorted=Array.from(new Set(dataAsli.map(d=>normalizeKomoditas(d.komoditas)))).filter(Boolean).sort();
+let selKom=document.getElementById("filterKomoditas");
+komSorted.forEach(function(k){let o=document.createElement("option");o.value=k;o.textContent=k;selKom.appendChild(o);});
 
 let pieChart, barChart, topChart;
 
@@ -224,14 +234,19 @@ document.getElementById("tabelData").innerHTML=html;
 }
 
 /* ================= CHART ================= */
+const KOMODITAS_WHITELIST=['Cabai Besar','Cabai Rawit','Bawang Merah','Buah Pisang','Buah Jeruk','Buah Durian'];
+
 function buildChart(data){
+
+let chartData=data.filter(d=>KOMODITAS_WHITELIST.indexOf(normalizeKomoditas(d.komoditas))!==-1);
 
 let kom={}, kab={}, top={};
 
-data.forEach(d=>{
-kom[d.komoditas]=(kom[d.komoditas]||0)+1;
+chartData.forEach(d=>{
+var normKom=normalizeKomoditas(d.komoditas);
+kom[normKom]=(kom[normKom]||0)+1;
 kab[d.kabupaten]=(kab[d.kabupaten]||0)+1;
-top[d.komoditas]=(top[d.komoditas]||0)+parseInt(d.produksi||0);
+top[normKom]=(top[normKom]||0)+parseInt(d.produksi||0);
 });
 
 /* PIE */
@@ -287,7 +302,7 @@ let kom=document.getElementById("filterKomoditas").value;
 
 let hasil=dataAsli.filter(d=>{
 return (kab==""||d.kabupaten==kab) &&
-(kom==""||d.komoditas==kom);
+(kom==""||normalizeKomoditas(d.komoditas)==kom);
 });
 
 renderTable(hasil);

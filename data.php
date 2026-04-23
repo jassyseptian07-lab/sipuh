@@ -89,6 +89,14 @@ if(isset($_GET['edit'])){
 <div class="alert alert-success">✅ Data berhasil diupdate</div>
 <?php } ?>
 
+<?php if(isset($_GET['status']) && $_GET['status']=='import'){ ?>
+<div class="alert alert-success">
+    ✅ Import selesai: <strong><?= (int)($_GET['ok']??0) ?></strong> data berhasil dimasukkan,
+    <?= (int)($_GET['skip']??0) ?> baris di-skip,
+    <?= (int)($_GET['fail']??0) ?> gagal.
+</div>
+<?php } ?>
+
 <!-- ===================== -->
 <!-- FORM EDIT -->
 <!-- ===================== -->
