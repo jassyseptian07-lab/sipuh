@@ -8,11 +8,9 @@ $error = "";
 if(isset($_POST['login'])){
 
 $username = mysqli_real_escape_string($conn,$_POST['username']);
-$password = md5($_POST['password']);
+$password = $_POST['password'];
 
-$sql = "SELECT * FROM users 
-        WHERE username='$username' 
-        AND password='$password'";
+$sql = "SELECT * FROM users WHERE username='$username'";
 
 $q = mysqli_query($conn,$sql);
 
@@ -21,8 +19,10 @@ if(!$q){
     die("SQL ERROR: ".mysqli_error($conn));
 }
 
+$user = mysqli_fetch_assoc($q);
+
 /* LOGIN SUCCESS */
-if(mysqli_num_rows($q) > 0){
+if($user && password_verify($password, $user['password'])){
     $_SESSION['admin'] = true;
     $_SESSION['username'] = $username;
 
