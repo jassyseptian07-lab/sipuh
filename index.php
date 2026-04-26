@@ -11,7 +11,7 @@ $kab=mysqli_fetch_assoc(mysqli_query($conn,"SELECT COUNT(DISTINCT kabupaten) jml
 
 $sert=mysqli_fetch_assoc(mysqli_query($conn,"
 SELECT COUNT(*) jml FROM pelaku_usaha
-WHERE sertifikasi!='' AND LOWER(sertifikasi)!='tidak ada'
+WHERE LOWER(TRIM(sertifikasi)) = 'ada'
 "))['jml']??0;
 
 /* ================= DATA ================= */
