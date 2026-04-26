@@ -82,7 +82,7 @@ padding:10px;border-radius:8px;
 <?php if($isAdmin){ ?>
 <a href="data.php">📋 Data</a>
 <a href="tambah.php">➕ Tambah</a>
-<a href="index.php?logout=1">🚪 Logout</a>
+<a href="logout.php">🚪 Logout</a>
 <?php } ?>
 
 </div>
