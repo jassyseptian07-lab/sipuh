@@ -73,6 +73,7 @@ padding:10px;border-radius:8px;
 <hr>
 
 <a href="index.php">🏠 Dashboard</a>
+<a href="https://wa.me/6281239468913" target="_blank" rel="noopener noreferrer">📞 Kontak</a>
 
 <?php if(!$isAdmin){ ?>
 <a href="login.php">🔐 Login Admin</a>
