@@ -19,6 +19,17 @@ $dataTable = mysqli_fetch_all(
 mysqli_query($conn,"SELECT * FROM pelaku_usaha ORDER BY id DESC"),
 MYSQLI_ASSOC
 );
+
+$barKab = mysqli_fetch_all(
+mysqli_query($conn,"
+SELECT kabupaten, COUNT(DISTINCT id) jml
+FROM pelaku_usaha
+WHERE kabupaten IS NOT NULL AND TRIM(kabupaten) <> ''
+GROUP BY kabupaten
+ORDER BY kabupaten
+"),
+MYSQLI_ASSOC
+);
 ?>
 
 <!DOCTYPE html>
@@ -125,7 +136,7 @@ echo "<option value='{$r['kabupaten']}'>{$r['kabupaten']}</option>";
 </div>
 
 <div class="col-md-6 card p-3">
-<h6>Kabupaten</h6>
+<h6>Pelaku Usaha per Kabupaten</h6>
 <canvas id="bar"></canvas>
 </div>
 
@@ -134,8 +145,6 @@ echo "<option value='{$r['kabupaten']}'>{$r['kabupaten']}</option>";
 <div class="row mt-3">
 
 <div class="col-md-12 card p-3">
-<h6>Top 5 Produksi</h6>
-<canvas id="top5"></canvas>
 </div>
 
 </div>
@@ -154,7 +163,6 @@ echo "<option value='{$r['kabupaten']}'>{$r['kabupaten']}</option>";
 <th>Kabupaten</th>
 <th>Alamat</th>
 <th>Komoditas</th>
-<th>Produksi</th>
 <th>Tujuan</th>
 <th>Teknik</th>
 <th>Sertifikasi</th>
@@ -196,11 +204,13 @@ return title(v);
 
 document.addEventListener("DOMContentLoaded", function(){
 
-let dataAsli = <?= json_encode($dataTable) ?>;
+const KOMODITAS_WHITELIST=['Cabai Merah Besar','Cabai Rawit','Bawang Merah','Buah Pisang Cavendish','Pisang Mas Kirana','Buah Jeruk','Buah Durian'];
 
-let komSorted=Array.from(new Set(dataAsli.map(d=>normalizeKomoditas(d.komoditas)))).filter(Boolean).sort();
+let dataAsli = <?= json_encode($dataTable) ?>;
+let dataBarKab = <?= json_encode($barKab) ?>;
+
 let selKom=document.getElementById("filterKomoditas");
-komSorted.forEach(function(k){let o=document.createElement("option");o.value=k;o.textContent=k;selKom.appendChild(o);});
+KOMODITAS_WHITELIST.forEach(function(k){let o=document.createElement("option");o.value=k;o.textContent=k;selKom.appendChild(o);});
 
 let pieChart, barChart, topChart;
 
@@ -221,8 +231,7 @@ html+=`
 <td>${d.nama_pelaku}</td>
 <td>${d.kabupaten}</td>
 <td>${d.alamat}</td>
-<td>${d.komoditas}</td>
-<td>${d.produksi}</td>
+<td>${d.komoditas}</td> 
 <td>${d.tujuan_pemasaran}</td>
 <td>${d.teknik_pemasaran}</td>
 <td>${d.sertifikasi}</td>
@@ -234,18 +243,15 @@ document.getElementById("tabelData").innerHTML=html;
 }
 
 /* ================= CHART ================= */
-const KOMODITAS_WHITELIST=['Cabai Besar','Cabai Rawit','Bawang Merah','Buah Pisang','Buah Jeruk','Buah Durian'];
-
 function buildChart(data){
 
 let chartData=data.filter(d=>KOMODITAS_WHITELIST.indexOf(normalizeKomoditas(d.komoditas))!==-1);
 
-let kom={}, kab={}, top={};
+let kom={}, top={};
 
 chartData.forEach(d=>{
 var normKom=normalizeKomoditas(d.komoditas);
 kom[normKom]=(kom[normKom]||0)+1;
-kab[d.kabupaten]=(kab[d.kabupaten]||0)+1;
 top[normKom]=(top[normKom]||0)+parseInt(d.produksi||0);
 });
 
@@ -262,36 +268,37 @@ backgroundColor:colors(Object.keys(kom).length)
 }
 });
 
-/* BAR */
-if(barChart) barChart.destroy();
+/* TOP 5 */
+// let topArr=Object.entries(top).sort((a,b)=>b[1]-a[1]).slice(0,5);
+
+// if(topChart) topChart.destroy();
+// topChart=new Chart(document.getElementById('top5'),{
+// type:'bar',
+// data:{
+// labels:topArr.map(x=>x[0]),
+// datasets:[{
+// data:topArr.map(x=>x[1]),
+// backgroundColor:colors(topArr.length)
+// }]
+// },
+// options:{plugins:{legend:{display:false}}}
+// });
+
+}
+
+/* ================= BAR (STATIS dari DB) ================= */
+function buildBarKab(){
 barChart=new Chart(document.getElementById('bar'),{
 type:'bar',
 data:{
-labels:Object.keys(kab),
+labels:dataBarKab.map(r=>r.kabupaten),
 datasets:[{
-data:Object.values(kab),
-backgroundColor:colors(Object.keys(kab).length)
+data:dataBarKab.map(r=>parseInt(r.jml)),
+backgroundColor:colors(dataBarKab.length)
 }]
 },
 options:{plugins:{legend:{display:false}}}
 });
-
-/* TOP 5 */
-let topArr=Object.entries(top).sort((a,b)=>b[1]-a[1]).slice(0,5);
-
-if(topChart) topChart.destroy();
-topChart=new Chart(document.getElementById('top5'),{
-type:'bar',
-data:{
-labels:topArr.map(x=>x[0]),
-datasets:[{
-data:topArr.map(x=>x[1]),
-backgroundColor:colors(topArr.length)
-}]
-},
-options:{plugins:{legend:{display:false}}}
-});
-
 }
 
 /* ================= FILTER ================= */
@@ -315,6 +322,7 @@ document.getElementById("filterKomoditas").addEventListener("change",filterData)
 /* INIT */
 renderTable(dataAsli);
 buildChart(dataAsli);
+buildBarKab();
 
 });
 
